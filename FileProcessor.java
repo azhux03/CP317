@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import javax.swing.JOptionPane;
 
 class FileProcessor {
     private final GradeCalculator gradeCalculator;
@@ -27,6 +28,10 @@ class FileProcessor {
                 if (parts.length == 2) {
                     data.put(parts[0], parts[1]);
                 }
+                else{
+                    // Display a message dialog for incorrect format
+                    showMessageDialog("Incorrect format in the Name File: " + line);
+                }
             }
         }
 
@@ -39,17 +44,32 @@ class FileProcessor {
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
-                String[] parts = line.split(", ");
+                // String line = "306851690, CP460, 74, 98, 76,";
+                String[] parts = line.split(",\\s?", -1);
                 if (parts.length == 6) {
-                    String studentId = parts[0];
-                    String courseCode = parts[1];
+                    String studentId;
+                    String courseCode;
+                    if(!parts[0].matches("\\d{9}")){
+                        studentId = "invalid student id " + parts[0];
+                        showMessageDialog("Invalid student id: " + parts[0]);
+                    }
+                    else{
+                        studentId = parts[0];
+                    }
+                    if(!parts[1].matches("^[A-Z]{2}\\d{3}$")){
+                        courseCode = "invalid code " + parts[1];
+                        showMessageDialog("Invalid code: " + parts[1]);
+                    }
+                    else{
+                        courseCode = parts[1];
+                    }
                     Double[] grades = new Double[]{
-                            Double.parseDouble(parts[2]),
-                            Double.parseDouble(parts[3]),
-                            Double.parseDouble(parts[4]),
-                            Double.parseDouble(parts[5].replace(",", "")) // Remove commas from the last part
+                        parseDoubleOrDefault(parts[2]),
+                        parseDoubleOrDefault(parts[3]),
+                        parseDoubleOrDefault(parts[4]),
+                        parseDoubleOrDefault(parts[5].replace(",", "")) // Remove commas from the last part
                     };
-                    String compositeKey = studentId + "-" + courseCode; //for combination:remove "-" + courseCode, and adjust writeoutputfile
+                    String compositeKey = studentId + "-" + courseCode; // Combination:remove "-" + courseCode, and adjust writeoutputfile
                     if (data.containsKey(compositeKey)) {
                         data.get(compositeKey).put(courseCode, grades);
                     } else {
@@ -57,25 +77,58 @@ class FileProcessor {
                         courses.put(courseCode, grades);
                         data.put(compositeKey, courses);
                     }
+                } else {
+                    // Display a message dialog for incorrect format
+                    showMessageDialog("Incorrect format in the Course File: " + line);
                 }
             }
         }
 
         return data;
     }
+    
+    private boolean validateNameFileFormat(String[] parts) {
+        return parts.length == 2;
+    }
+
+    private boolean validateCourseFileFormat(String[] parts) {
+        return parts.length == 6;
+    }
+
+    private void showMessageDialog(String message) {
+        JOptionPane.showMessageDialog(null, message, "Format Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+
+
+    private Double parseDoubleOrDefault(String value) {
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            // Handle the case where the value cannot be parsed as a Double
+            return 0.0; // or another default value that makes sense for your application
+        }
+    }
 
     public void writeOutputFile(Map<String, String> nameData, Map<String, Double> finalGrades,
                                 Map<String, Map<String, Double[]>> courseData, String filePath) throws IOException {
         try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write("Student ID              Student Name    Course Code    Final Grade (test 1,2,3-3x20%, final exam 40%)\n");
+            // writer.write("Student ID              Student Name    Course Code    Final Grade (test 1,2,3-3x20%, final exam 40%)\n");
             for (Map.Entry<String, Double> entry : finalGrades.entrySet()) {
                 String compositeKey = entry.getKey();
                 String studentId = compositeKey.split("-")[0];  // Extract student ID from composite key
-                String courseCode = compositeKey.split("-")[1]; // Extract course code from composite key
-                String studentName = nameData.get(studentId);
+                String courseCode = compositeKey.split("-", -1)[1]; // Extract course code from composite key
+                String studentName;
+                if (studentId.equals("")){
+                    studentName = "no student id, so no name";
+                }
+                else{
+                    studentName = nameData.get(studentId);
+                }
                 Double finalGrade = entry.getValue();
 
-                String outputLine = String.format("%9s %26s %14s %14.1f\n", studentId, studentName, courseCode, finalGrade);
+                // String outputLine = String.format("%9s %26s %14s %14.1f\n", studentId, studentName, courseCode, finalGrade);
+                String outputLine = String.format("%s, %s, %s, %.1f\n", studentId, studentName, courseCode, finalGrade);
                 writer.write(outputLine);
             }
         }
