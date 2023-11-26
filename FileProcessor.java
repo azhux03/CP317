@@ -19,16 +19,23 @@ class FileProcessor {
     }
 
     public Map<String, String> readNameFile(String filePath) throws IOException {
-        Map<String, String> data = new HashMap<>();
+    Map<String, String> data = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
                 String[] parts = line.split(", ");
                 if (parts.length == 2) {
-                    data.put(parts[0], parts[1]);
-                }
-                else{
+                    String studentId = parts[0].trim();
+                    String studentName = parts[1].trim();
+
+                    if (isValidStudentId(studentId) && isValidStudentName(studentName)) {
+                        data.put(studentId, studentName);
+                    } else {
+                        // Display a message dialog for incorrect format
+                        showMessageDialog("Invalid format in the Name File: " + line);
+                    }
+                } else {
                     // Display a message dialog for incorrect format
                     showMessageDialog("Incorrect format in the Name File: " + line);
                 }
@@ -38,13 +45,21 @@ class FileProcessor {
         return data;
     }
 
+    private boolean isValidStudentId(String studentId) {
+        return studentId.matches("\\d{9}");
+    }
+
+    private boolean isValidStudentName(String studentName) {
+        return studentName.matches("[A-Za-z ]+");
+    }
+
+
     public Map<String, Map<String, Double[]>> readCourseFile(String filePath) throws IOException {
         Map<String, Map<String, Double[]>> data = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = br.readLine()) != null) {
-                // String line = "306851690, CP460, 74, 98, 76,";
                 String[] parts = line.split(",\\s?", -1);
                 if (parts.length == 6) {
                     String studentId;
@@ -86,27 +101,17 @@ class FileProcessor {
 
         return data;
     }
-    
-    private boolean validateNameFileFormat(String[] parts) {
-        return parts.length == 2;
-    }
-
-    private boolean validateCourseFileFormat(String[] parts) {
-        return parts.length == 6;
-    }
 
     private void showMessageDialog(String message) {
         JOptionPane.showMessageDialog(null, message, "Format Error", JOptionPane.ERROR_MESSAGE);
     }
-
-
 
     private Double parseDoubleOrDefault(String value) {
         try {
             return Double.parseDouble(value);
         } catch (NumberFormatException e) {
             // Handle the case where the value cannot be parsed as a Double
-            return 0.0; // or another default value that makes sense for your application
+            return 0.0; // defualt the grade if it does not exist
         }
     }
 
@@ -118,13 +123,7 @@ class FileProcessor {
                 String compositeKey = entry.getKey();
                 String studentId = compositeKey.split("-")[0];  // Extract student ID from composite key
                 String courseCode = compositeKey.split("-", -1)[1]; // Extract course code from composite key
-                String studentName;
-                if (studentId.equals("")){
-                    studentName = "no student id, so no name";
-                }
-                else{
-                    studentName = nameData.get(studentId);
-                }
+                String studentName = nameData.get(studentId);
                 Double finalGrade = entry.getValue();
 
                 // String outputLine = String.format("%9s %26s %14s %14.1f\n", studentId, studentName, courseCode, finalGrade);
