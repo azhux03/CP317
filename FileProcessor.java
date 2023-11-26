@@ -6,6 +6,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 import javax.swing.JOptionPane;
+import java.util.TreeMap;
 
 class FileProcessor {
     private final GradeCalculator gradeCalculator;
@@ -19,7 +20,7 @@ class FileProcessor {
     }
 
     public Map<String, String> readNameFile(String filePath) throws IOException {
-    Map<String, String> data = new HashMap<>();
+        Map<String, String> data = new HashMap<>();
 
         try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
             String line;
@@ -118,8 +119,10 @@ class FileProcessor {
     public void writeOutputFile(Map<String, String> nameData, Map<String, Double> finalGrades,
                                 Map<String, Map<String, Double[]>> courseData, String filePath) throws IOException {
         try (FileWriter writer = new FileWriter(filePath)) {
+            // Use TreeMap to automatically sort by student ID
             // writer.write("Student ID              Student Name    Course Code    Final Grade (test 1,2,3-3x20%, final exam 40%)\n");
-            for (Map.Entry<String, Double> entry : finalGrades.entrySet()) {
+            Map<String, Double> sortedFinalGrades = new TreeMap<>(finalGrades);
+            for (Map.Entry<String, Double> entry : sortedFinalGrades.entrySet()) {
                 String compositeKey = entry.getKey();
                 String studentId = compositeKey.split("-")[0];  // Extract student ID from composite key
                 String courseCode = compositeKey.split("-", -1)[1]; // Extract course code from composite key
