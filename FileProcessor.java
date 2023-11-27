@@ -108,13 +108,14 @@ class FileProcessor {
     }
 
     private Double parseDoubleOrDefault(String value) {
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            // Handle the case where the value cannot be parsed as a Double
-            return 0.0; // defualt the grade if it does not exist
-        }
+    try {
+        double parsedValue = Double.parseDouble(value);
+        return Math.max(parsedValue, 0.0); // Set to 0 if the value is negative
+    } catch (NumberFormatException e) {
+        // Handle the case where the value cannot be parsed as a Double
+        return 0.0; // Default the grade if it does not exist
     }
+}
 
     public void writeOutputFile(Map<String, String> nameData, Map<String, Double> finalGrades,
                                 Map<String, Map<String, Double[]>> courseData, String filePath) throws IOException {
